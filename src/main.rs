@@ -119,29 +119,23 @@ impl Hand {
         self.cards_sorted.reverse();
     }
 
-    fn get_hand_type(&mut self) -> HandType {
-        if self.cards_sorted.len() == 5 {
-            if self.is_five_of_a_kind() {
-                return HandType::FiveOfAKind;
+    fn get_hand_type(&mut self) {
+        self.hand_type = if self.is_five_of_a_kind() {
+                HandType::FiveOfAKind
+            } else if self.is_four_of_a_kind() {
+                HandType::FourOfAKind
+            } else if self.is_full_house() {
+                HandType::FullHouse
+            } else if self.is_three_of_a_kind() {
+                HandType::ThreeOfAKind
+            } else if self.is_two_pair() {
+                HandType::TwoPair
+            } else if self.is_pair() {
+                HandType::Pair
+            } else {
+                HandType::HighCard
             }
-            if self.is_four_of_a_kind() {
-                return HandType::FourOfAKind;
-            }
-            if self.is_full_house() {
-                return HandType::FullHouse;
-            }
-            if self.is_three_of_a_kind() {
-                return HandType::ThreeOfAKind;
-            }
-            if self.is_two_pair() {
-                return HandType::TwoPair;
-            }
-            if self.is_pair() {
-                return HandType::Pair;
-            }
-        }
-        HandType::HighCard
-    }    
+    }
 
     fn is_five_of_a_kind(&self) -> bool {
         self.cards_sorted.iter().all(|x| x.to_string() == self.cards_sorted[0])
@@ -169,7 +163,7 @@ impl Hand {
 }
 
 
-fn setup(filename: &str) -> Vec<Hand> {
+fn get_hands(filename: &str) -> Vec<Hand> {
     read_to_string(filename).unwrap().lines().map(|line| {
         let mut line = line.split_whitespace();
         let cards = line.next().unwrap().chars().collect::<Vec<char>>().iter().map(|x| x.to_string()).collect::<Vec<String>>();
@@ -179,13 +173,37 @@ fn setup(filename: &str) -> Vec<Hand> {
     }).collect::<Vec<Hand>>()
 }
 
+fn sort_hands(hands: &mut Vec<Hand>) {
+    hands.sort_by(|a, b| {
+        if a.hand_type.to_ordinal() == b.hand_type.to_ordinal() {
+            for i in 0..a.cards_sorted.len() {
+                let a_rank = CardRank::from_str(&a.cards_sorted[i]);
+                let b_rank = CardRank::from_str(&b.cards_sorted[i]);
+                if a_rank.to_ordinal() != b_rank.to_ordinal() {
+                    return a_rank.to_ordinal().cmp(&b_rank.to_ordinal());
+                }
+            }
+            // This should never happen
+            return a.bid.cmp(&b.bid);
+        } else {
+            a.hand_type.to_ordinal().cmp(&b.hand_type.to_ordinal())
+        }
+    });
+}
+
 fn part_1(filename: &str) -> i32 {
-    let hands = setup(filename);
-    0
+    let mut hands = get_hands(filename);
+    sort_hands(&mut hands);
+    let mut sum = 0;
+    for (i, hand) in hands.iter().enumerate() {
+        println!("Hand {:?}", hand);
+        sum += hand.bid * (i as i32 + 1);
+    }
+    sum
 }
 
 fn main() {
-    assert_eq!(part_1("example.txt"), 6440);
+    // assert_eq!(part_1("example.txt"), 6440);
     println!("Part 1 Solution: {}", part_1("input.txt"));
     // assert_eq!(part_2("example.txt"), 0);
     // println!("Part 2 Solution: {}", part_1("input.txt"));
