@@ -176,9 +176,9 @@ fn get_hands(filename: &str) -> Vec<Hand> {
 fn sort_hands(hands: &mut Vec<Hand>) {
     hands.sort_by(|a, b| {
         if a.hand_type.to_ordinal() == b.hand_type.to_ordinal() {
-            for i in 0..a.cards_sorted.len() {
-                let a_rank = CardRank::from_str(&a.cards_sorted[i]);
-                let b_rank = CardRank::from_str(&b.cards_sorted[i]);
+            for i in 0..a.cards.len() {
+                let a_rank = CardRank::from_str(&a.cards[i]);
+                let b_rank = CardRank::from_str(&b.cards[i]);
                 if a_rank.to_ordinal() != b_rank.to_ordinal() {
                     return a_rank.to_ordinal().cmp(&b_rank.to_ordinal());
                 }
@@ -191,19 +191,20 @@ fn sort_hands(hands: &mut Vec<Hand>) {
     });
 }
 
-fn part_1(filename: &str) -> i32 {
+fn part_1(filename: &str) -> usize {
     let mut hands = get_hands(filename);
     sort_hands(&mut hands);
-    let mut sum = 0;
+    let mut sum: usize = 0;
     for (i, hand) in hands.iter().enumerate() {
-        println!("Hand {:?}", hand);
-        sum += hand.bid * (i as i32 + 1);
+        let winnings = hand.bid as usize * (i + 1);
+        // println!("Hand: {:?}, Winnings: {}, i: {}", hand, winnings, i);
+        sum += winnings;
     }
     sum
 }
 
 fn main() {
-    // assert_eq!(part_1("example.txt"), 6440);
+    assert_eq!(part_1("example.txt"), 6440);
     println!("Part 1 Solution: {}", part_1("input.txt"));
     // assert_eq!(part_2("example.txt"), 0);
     // println!("Part 2 Solution: {}", part_1("input.txt"));
