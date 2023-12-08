@@ -1,16 +1,191 @@
-use std::fs::read_to_string;
+use std::{fs::read_to_string, collections::HashMap};
 
-fn setup(filename: &str) {
-    let input = read_to_string(filename).unwrap();
+#[derive(Debug)]
+enum HandType {
+    HighCard,
+    Pair,
+    TwoPair,
+    ThreeOfAKind,
+    FullHouse,
+    FourOfAKind,
+    FiveOfAKind,
+}
+
+impl HandType {
+    fn to_ordinal(&self) -> i32 {
+        match self {
+            HandType::HighCard => 0,
+            HandType::Pair => 1,
+            HandType::TwoPair => 2,
+            HandType::ThreeOfAKind => 3,
+            HandType::FullHouse => 4,
+            HandType::FourOfAKind => 5,
+            HandType::FiveOfAKind => 6,
+        }
+    }
+}
+
+enum CardRank {
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
+    Ten,
+    Jack, 
+    Queen,
+    King,
+    Ace,
+}
+
+impl CardRank {
+    fn from_str(s: &str) -> CardRank {
+        match s {
+            "2" => CardRank::Two,
+            "3" => CardRank::Three,
+            "4" => CardRank::Four,
+            "5" => CardRank::Five,
+            "6" => CardRank::Six,
+            "7" => CardRank::Seven,
+            "8" => CardRank::Eight,
+            "9" => CardRank::Nine,
+            "T" => CardRank::Ten,
+            "J" => CardRank::Jack,
+            "Q" => CardRank::Queen,
+            "K" => CardRank::King,
+            "A" => CardRank::Ace,
+            _ => panic!("Invalid card rank"),
+        }
+    }
+
+    fn to_ordinal(&self) -> i32 {
+        match self {
+            CardRank::Two => 0,
+            CardRank::Three => 1,
+            CardRank::Four => 2,
+            CardRank::Five => 3,
+            CardRank::Six => 4,
+            CardRank::Seven => 5,
+            CardRank::Eight => 6,
+            CardRank::Nine => 7,
+            CardRank::Ten => 8,
+            CardRank::Jack => 9,
+            CardRank::Queen => 10,
+            CardRank::King => 11,
+            CardRank::Ace => 12,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Hand {
+    cards: Vec<String>,
+    cards_mapped: HashMap<String, i32>,
+    bid: i32,
+    cards_sorted: Vec<String>,
+    hand_type: HandType,
+}
+
+impl Hand {
+    fn new(cards: Vec<String>, bid: i32) -> Hand {
+        let mut cards_mapped = HashMap::new();
+
+        cards.iter().for_each(|x| {
+            *cards_mapped.entry(x.to_string()).or_insert(0) += 1;
+        });
+        let mut hand = Hand { cards, cards_mapped, bid, cards_sorted: Vec::new(), hand_type: HandType::HighCard };
+        hand.sort_cards();
+        hand.get_hand_type();
+        hand
+    }
+
+    fn sort_cards(&mut self) {
+        // sort first by how many times the card appears, then by the card rank
+        self.cards_sorted = self.cards.clone();
+        self.cards_sorted.sort_by(|a, b| {
+            let a_count = self.cards_mapped.get(a).unwrap();
+            let b_count = self.cards_mapped.get(b).unwrap();
+            if a_count == b_count {
+                let a_rank = CardRank::from_str(a);
+                let b_rank = CardRank::from_str(b);
+                a_rank.to_ordinal().cmp(&b_rank.to_ordinal())
+            } else {
+                a_count.cmp(b_count)
+            }
+        });
+        self.cards_sorted.reverse();
+    }
+
+    fn get_hand_type(&mut self) -> HandType {
+        if self.cards_sorted.len() == 5 {
+            if self.is_five_of_a_kind() {
+                return HandType::FiveOfAKind;
+            }
+            if self.is_four_of_a_kind() {
+                return HandType::FourOfAKind;
+            }
+            if self.is_full_house() {
+                return HandType::FullHouse;
+            }
+            if self.is_three_of_a_kind() {
+                return HandType::ThreeOfAKind;
+            }
+            if self.is_two_pair() {
+                return HandType::TwoPair;
+            }
+            if self.is_pair() {
+                return HandType::Pair;
+            }
+        }
+        HandType::HighCard
+    }    
+
+    fn is_five_of_a_kind(&self) -> bool {
+        self.cards_sorted.iter().all(|x| x.to_string() == self.cards_sorted[0])
+    }
+
+    fn is_four_of_a_kind(&self) -> bool {
+        self.cards_sorted[0..4].iter().all(|x| x.to_string() == self.cards_sorted[0])
+    }
+
+    fn is_full_house(&self) -> bool {
+        self.cards_sorted[0..3].iter().all(|x| x.to_string() == self.cards_sorted[0]) && self.cards_sorted[3..5].iter().all(|x| x.to_string() == self.cards_sorted[3])
+    }
+
+    fn is_three_of_a_kind(&self) -> bool {
+        self.cards_sorted[0..3].iter().all(|x| x.to_string() == self.cards_sorted[0])
+    }
+
+    fn is_two_pair(&self) -> bool {
+        self.cards_sorted[0..2].iter().all(|x| x.to_string() == self.cards_sorted[0]) && self.cards_sorted[2..4].iter().all(|x| x.to_string() == self.cards_sorted[2])
+    }
+
+    fn is_pair(&self) -> bool {
+        self.cards_sorted[0..2].iter().all(|x| x.to_string() == self.cards_sorted[0])
+    }
+}
+
+
+fn setup(filename: &str) -> Vec<Hand> {
+    read_to_string(filename).unwrap().lines().map(|line| {
+        let mut line = line.split_whitespace();
+        let cards = line.next().unwrap().chars().collect::<Vec<char>>().iter().map(|x| x.to_string()).collect::<Vec<String>>();
+        
+        let bid = line.next().unwrap().parse::<i32>().unwrap();
+        Hand::new(cards, bid)
+    }).collect::<Vec<Hand>>()
 }
 
 fn part_1(filename: &str) -> i32 {
-    setup(filename);
+    let hands = setup(filename);
     0
 }
 
 fn main() {
-    assert_eq!(part_1("example.txt"), 0);
+    assert_eq!(part_1("example.txt"), 6440);
     println!("Part 1 Solution: {}", part_1("input.txt"));
     // assert_eq!(part_2("example.txt"), 0);
     // println!("Part 2 Solution: {}", part_1("input.txt"));
