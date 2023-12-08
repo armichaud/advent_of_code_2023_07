@@ -205,7 +205,7 @@ fn part_1(filename: &str) -> usize {
 
 fn main() {
     assert_eq!(part_1("example.txt"), 6440);
-    println!("Part 1 Solution: {}", part_1("input.txt"));
+    assert_eq!(part_1("input.txt"), 248217452);
     // assert_eq!(part_2("example.txt"), 0);
     // println!("Part 2 Solution: {}", part_1("input.txt"));
 }
